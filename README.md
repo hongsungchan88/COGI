@@ -1,3 +1,39 @@
+> **이 저장소는 4인 팀 프로젝트 [Leeuswa/COGI](https://github.com/Leeuswa/COGI)의 포크입니다.**
+> 아래는 **홍성찬([@hongsungchan88](https://github.com/hongsungchan88))이 담당한 부분**이고, 원본 README는 이어서 그대로 두었습니다.
+
+## 담당 파트 — 홍성찬
+
+| 영역 | 내용 |
+|---|---|
+| **PR 리뷰 파이프라인** | GitHub Webhook 수신과 서명(`X-Hub-Signature-256`) 검증부터 Diff 파싱, AI 리뷰 생성, 결과 저장까지 이어지는 처리 흐름 설계 및 구현 |
+| **AI 모델 선택 로직** | Claude · OpenAI · Gemini · Groq 4개 벤더를 Spring RestClient 기반 단일 인터페이스로 통합, 플랜별 모델 차등 제공 |
+| **리뷰 결과 대시보드** | 리뷰 이슈 목록과 심각도 · 카테고리 조회 화면 및 API |
+| **팀원 초대 · 권한 관리** | 초대 발송, 수락/거절, OWNER/MEMBER 권한 처리 |
+
+기간: 2026.06.30 ~ 2026.08.05 · 팀 4인 · Java 25 / Spring Boot 4.1 / Spring Data JPA / MariaDB / javaparser
+
+### 트러블슈팅
+
+**1. 리뷰 컨텍스트 축소 — javaparser AST 파싱**
+
+변경 파일을 통째로 AI에 넘기면서 토큰이 낭비되고 무관한 코드까지 지적됐습니다.
+javaparser로 Diff를 AST 단위로 파싱해 실제로 바뀐 블록만 추출하도록 바꿔 리뷰 대상을 좁혔습니다.
+
+**2. 모델 응답 파싱 실패 — thinking 블록 대응**
+
+특정 모델이 응답 `content` 배열 맨 앞에 thinking 블록을 넣으면서, `content[0]`을 텍스트로 가정하던
+로직이 빈 응답을 받아 리뷰 결과 JSON 파싱이 실패했습니다. 배열 전체를 순회해 `type: "text"` 블록만
+이어 붙이도록 고쳐, 모델을 바꿔도 파이프라인이 멈추지 않게 만들었습니다.
+
+**3. Webhook 재전송으로 인한 리뷰 중복 생성**
+
+GitHub 웹훅이 같은 이벤트를 재전송하면서 동일 PR에 리뷰가 중복 생성됐습니다.
+PR의 `head_sha`를 추적해 이미 처리된 커밋이면 건너뛰도록 해, 중복 리뷰와 중복 AI 호출을 함께 없앴습니다.
+
+**포트폴리오** · https://hongsungchan88.github.io
+
+---
+
 # COGI · Code Guide 
 
 > AI가 GitHub Pull Request를 리뷰하고, 발견한 약점을 학습 카드와 주간 성장 리포트로 이어주는 **성장형 코드 리뷰 플랫폼**
